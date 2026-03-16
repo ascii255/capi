@@ -1,0 +1,3 @@
+#pragma once
+
+#include <capi/unique_res.hpp>
