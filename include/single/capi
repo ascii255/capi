@@ -1,3 +1,4 @@
 #pragma once
 
+#include <capi/unique_id.hpp>
 #include <capi/unique_res.hpp>

@@ -15,6 +15,7 @@ target_sources(capi INTERFACE
   FILE_SET HEADERS
   BASE_DIRS include
   FILES
+    include/capi/unique_id.hpp
     include/capi/unique_res.hpp
 )
 target_compile_features(capi INTERFACE cxx_std_23)

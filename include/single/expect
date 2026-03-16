@@ -1,15 +1,20 @@
-namespace detail {
-  // Calling this in a constexpr context causes a compile-time error,
-  // which IS the assertion failure — look up the call stack for the cause
-  void failed();
+#pragma once
 
-  [[noreturn]] inline void breakpoint() noexcept {
+namespace detail {
+
+// Calling this in a constexpr context causes a compile-time error,
+// which IS the assertion failure — look up the call stack for the cause
+void failed();
+
+[[noreturn]] inline void breakpoint() noexcept {
 #if defined(_MSC_VER)
-    while (true) __debugbreak();
+  while (true)
+    __debugbreak();
 #else
-    __builtin_trap();
+  __builtin_trap();
 #endif
-  }
+}
+
 } // namespace detail
 
 constexpr void expect(auto cond)
