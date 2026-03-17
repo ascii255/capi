@@ -6,8 +6,8 @@
 handle types), runs an `Open` step at construction, and invokes `Close` in its
 destructor.
 
-`unique_res` stores a raw pointer and a release function, then automatically calls
-the release function when the wrapper goes out of scope.
+`unique_res` acquires a pointer through `Create(args...)` and automatically
+releases it with `Destroy(ptr)` when the wrapper goes out of scope.
 
 ## Include
 
@@ -88,10 +88,10 @@ extern "C" {
 
 #include <capi/unique_res.hpp>
 
-using client_handle = capi::unique_res<c_client>;
+using client_handle = capi::unique_res<c_client, c_client_open, c_client_close>;
 
 client_handle open_client(const char* endpoint) {
-	return client_handle { c_client_open(endpoint), &c_client_close };
+	return client_handle { endpoint };
 }
 
 int send_ping() {
@@ -118,11 +118,11 @@ extern "C" {
 
 #include <capi/unique_res.hpp>
 
-struct client : capi::unique_res<c_client> {
-	using capi::unique_res<c_client>::unique_res;
+struct client : capi::unique_res<c_client, c_client_open, c_client_close> {
+	using capi::unique_res<c_client, c_client_open, c_client_close>::unique_res;
 
 	static client open(const char* endpoint) {
-		return client { c_client_open(endpoint), &c_client_close };
+		return client { endpoint };
 	}
 
 	int send(const char* payload) const {
@@ -145,7 +145,9 @@ int send_ping_v2() {
 - By default, `T {}` is the uninitialized ID value and evaluates to `false`.
 - Access the underlying ID with `static_cast<T>(id_handle)`.
 - `unique_res` is move-only (copy operations are deleted).
-- A `nullptr` resource is valid and evaluates to `false`.
+- `unique_res` is defined as `capi::unique_res<T, Create, Destroy>`.
+- `Create(args...)` must return `T*`.
+- A `nullptr` result from `Create(...)` is valid and evaluates to `false`.
 - Access the underlying pointer with `static_cast<T*>(handle)`.
 
 ## CMake

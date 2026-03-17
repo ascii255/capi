@@ -3,14 +3,17 @@
 #include <memory>
 #include <utility>
 
-namespace capi::inline v1_0_0 {
+namespace capi::inline v1_0_4 {
 
-template <typename T, typename D = void (*)(T*)> struct unique_res {
+template <typename T, auto Create, auto Destroy> struct unique_res {
 protected:
-  std::unique_ptr<T, D> resource;
+  std::unique_ptr<T, decltype(Destroy)> resource;
 
 public:
-  constexpr explicit unique_res(T* ptr, D deleter) noexcept : resource { ptr, std::move(deleter) } {}
+  template <typename... Args>
+    requires std::is_invocable_r_v<T*, decltype(Create), Args...>
+  constexpr explicit unique_res(Args&&... args) noexcept(noexcept(Create(std::forward<Args>(args)...)))
+      : resource { Create(std::forward<Args>(args)...), Destroy } {}
   unique_res(const unique_res&) = delete;
   unique_res& operator=(const unique_res&) = delete;
   constexpr unique_res(unique_res&&) noexcept = default;
@@ -20,7 +23,7 @@ public:
   constexpr explicit operator bool() const noexcept { return resource != nullptr; }
 };
 
-} // namespace capi::inline v1_0_0
+} // namespace capi
 
 #ifdef CAPI_TESTING
 
@@ -29,6 +32,7 @@ public:
 
 namespace capi::testing {
 
+constexpr int* c_api_acquire_int(int* value) noexcept { return value; }
 constexpr void no_op_int_deleter(int*) {}
 
 struct fake_c_api_resource {
@@ -47,13 +51,16 @@ constexpr void c_api_release(fake_c_api_resource* resource) noexcept {
   *resource->released = true;
 }
 
+using tracked_resource = unique_res<fake_c_api_resource, c_api_acquire, c_api_release>;
+using tracked_int = unique_res<int, c_api_acquire_int, no_op_int_deleter>;
+
 constexpr void simulated_c_api_resource_lifecycle() {
   int release_count = 0;
   bool released = false;
   fake_c_api_resource resource { &release_count, &released };
 
   {
-    unique_res<fake_c_api_resource> handle { c_api_acquire(&resource), &c_api_release };
+    tracked_resource handle { &resource };
     expect(static_cast<bool>(handle));
     expect(static_cast<fake_c_api_resource*>(handle) == &resource);
     expect(release_count == 0);
@@ -65,33 +72,33 @@ constexpr void simulated_c_api_resource_lifecycle() {
 }
 
 constexpr void empty_resource_behaves_as_expected() {
-  unique_res<int> resource { nullptr, &no_op_int_deleter };
+  tracked_int resource { nullptr };
   expect(!static_cast<bool>(resource));
   expect(static_cast<int*>(resource) == nullptr);
 }
 
 constexpr void move_constructor_transfers_resource() {
   int value = 0;
-  unique_res<int> source { &value, &no_op_int_deleter };
-  unique_res<int> target { std::move(source) };
+  tracked_int source { &value };
+  tracked_int target { std::move(source) };
   expect(static_cast<int*>(target) == &value);
   expect(!static_cast<bool>(source));
 }
 
 constexpr void move_assignment_transfers_resource() {
   int value = 0;
-  unique_res<int> source { &value, &no_op_int_deleter };
-  unique_res<int> target { nullptr, &no_op_int_deleter };
+  tracked_int source { &value };
+  tracked_int target { nullptr };
   target = std::move(source);
   expect(static_cast<int*>(target) == &value);
   expect(!static_cast<bool>(source));
 }
 
 constexpr void run_unique_res_tests() {
-  expect(std::is_move_constructible_v<unique_res<int>>);
-  expect(std::is_move_assignable_v<unique_res<int>>);
-  expect(!std::is_copy_constructible_v<unique_res<int>>);
-  expect(!std::is_copy_assignable_v<unique_res<int>>);
+  expect(std::is_move_constructible_v<tracked_int>);
+  expect(std::is_move_assignable_v<tracked_int>);
+  expect(!std::is_copy_constructible_v<tracked_int>);
+  expect(!std::is_copy_assignable_v<tracked_int>);
 
   empty_resource_behaves_as_expected();
   move_constructor_transfers_resource();

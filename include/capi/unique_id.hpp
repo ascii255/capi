@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace capi::inline v1_0_3 {
+namespace capi::inline v1_0_4 {
 
 template <typename T, auto Open, auto Close, T Uninitialized = T {}>
   requires std::invocable<decltype(Close), T>
@@ -15,8 +15,9 @@ protected:
 public:
   template <typename... Args>
     requires std::is_invocable_r_v<T, decltype(Open), T, Args...>
-  constexpr explicit unique_id(T raw_id, Args&&... args) noexcept : id { Open(raw_id, std::forward<Args>(args)...) } {}
-  constexpr ~unique_id() noexcept {
+  constexpr explicit unique_id(T raw_id, Args&&... args) noexcept(noexcept(Open(raw_id, std::forward<Args>(args)...)))
+      : id { Open(raw_id, std::forward<Args>(args)...) } {}
+  constexpr ~unique_id() noexcept(noexcept(Close(std::declval<T>()))) {
     if (id != Uninitialized) Close(id);
   }
   constexpr unique_id(const unique_id&) = delete;
@@ -31,7 +32,7 @@ public:
   constexpr explicit operator bool() const noexcept { return id != Uninitialized; }
 };
 
-} // namespace capi::inline v1_0_3
+} // namespace capi
 
 #ifdef CAPI_TESTING
 
