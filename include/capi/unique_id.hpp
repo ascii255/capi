@@ -1,32 +1,37 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
+#include <utility>
 
-namespace capi::inline v1_0_1 {
+namespace capi::inline v1_0_3 {
 
-template <typename T, auto C>
-  requires std::invocable<decltype(C), T>
+template <typename T, auto Open, auto Close, T Uninitialized = T {}>
+  requires std::invocable<decltype(Close), T>
 struct unique_id {
 protected:
-  T id = T {};
+  T id = Uninitialized;
 
 public:
-  constexpr explicit unique_id(T id) noexcept : id(id) {}
-
+  template <typename... Args>
+    requires std::is_invocable_r_v<T, decltype(Open), T, Args...>
+  constexpr explicit unique_id(T raw_id, Args&&... args) noexcept : id { Open(raw_id, std::forward<Args>(args)...) } {}
   constexpr ~unique_id() noexcept {
-    if (id) C(id);
+    if (id != Uninitialized) Close(id);
+  }
+  constexpr unique_id(const unique_id&) = delete;
+  constexpr unique_id& operator=(const unique_id&) = delete;
+  constexpr unique_id(unique_id&& other) noexcept : id { std::exchange(other.id, Uninitialized) } {}
+  constexpr unique_id& operator=(unique_id&& other) noexcept {
+    std::swap(id, other.id);
+    return *this;
   }
 
-  unique_id(const unique_id&) = delete;
-  unique_id& operator=(const unique_id&) = delete;
-  unique_id(unique_id&& other) = delete;
-  unique_id& operator=(unique_id&& other) = delete;
-
   constexpr explicit operator T() const noexcept { return id; }
-  constexpr explicit operator bool() const noexcept { return id != T {}; }
+  constexpr explicit operator bool() const noexcept { return id != Uninitialized; }
 };
 
-} // namespace capi::inline v1_0_1
+} // namespace capi::inline v1_0_3
 
 #ifdef CAPI_TESTING
 
@@ -35,36 +40,66 @@ public:
 
 namespace capi::testing {
 
-constexpr void tracking_id_deleter(int* id) noexcept { ++(*id); }
+constexpr int* tracking_id_opener(int* id) noexcept { return id; }
+constexpr void tracking_id_closer(int* id) noexcept { ++(*id); }
+
+using tracking_id = unique_id<int*, tracking_id_opener, tracking_id_closer>;
 
 constexpr void simulated_c_api_id_lifecycle() {
-  int delete_count = 0;
+  int close_count = 0;
   {
-    unique_id<int*, tracking_id_deleter> handle {&delete_count};
+    tracking_id handle { &close_count };
     expect(static_cast<bool>(handle));
-    expect(static_cast<int*>(handle) == &delete_count);
-    expect(delete_count == 0);
+    expect(static_cast<int*>(handle) == &close_count);
+    expect(close_count == 0);
   }
-  expect(delete_count == 1);
+  expect(close_count == 1);
 }
 
-constexpr void zero_id_skips_deleter() {
-  int delete_count = 0;
+constexpr void zero_id_skips_closer() {
+  int close_count = 0;
   {
-    unique_id<int*, tracking_id_deleter> handle {nullptr};
+    tracking_id handle { nullptr };
     expect(!static_cast<bool>(handle));
     expect(static_cast<int*>(handle) == nullptr);
   }
-  expect(delete_count == 0);
+  expect(close_count == 0);
+}
+
+constexpr void move_constructor_transfers_id() {
+  int close_count = 0;
+  {
+    tracking_id source { &close_count };
+    tracking_id target { std::move(source) };
+    expect(static_cast<int*>(target) == &close_count);
+    expect(!static_cast<bool>(source));
+    expect(close_count == 0);
+  }
+  expect(close_count == 1);
+}
+
+constexpr void move_assignment_transfers_id() {
+  int close_count = 0;
+  {
+    tracking_id source { &close_count };
+    tracking_id target { nullptr };
+    target = std::move(source);
+    expect(static_cast<int*>(target) == &close_count);
+    expect(!static_cast<bool>(source));
+    expect(close_count == 0);
+  }
+  expect(close_count == 1);
 }
 
 constexpr void run_unique_id_tests() {
-  expect(!std::is_move_constructible_v<unique_id<int*, tracking_id_deleter>>);
-  expect(!std::is_move_assignable_v<unique_id<int*, tracking_id_deleter>>);
-  expect(!std::is_copy_constructible_v<unique_id<int*, tracking_id_deleter>>);
-  expect(!std::is_copy_assignable_v<unique_id<int*, tracking_id_deleter>>);
+  expect(std::is_move_constructible_v<tracking_id>);
+  expect(std::is_move_assignable_v<tracking_id>);
+  expect(!std::is_copy_constructible_v<tracking_id>);
+  expect(!std::is_copy_assignable_v<tracking_id>);
 
-  zero_id_skips_deleter();
+  zero_id_skips_closer();
+  move_constructor_transfers_id();
+  move_assignment_transfers_id();
   simulated_c_api_id_lifecycle();
 }
 
