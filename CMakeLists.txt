@@ -25,6 +25,7 @@ target_include_directories(capi INTERFACE include)
 target_include_directories(capi SYSTEM INTERFACE include/single)
 
 if(CAPI_BUILD_TESTING)
+  enable_testing()
   set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
   add_executable(capi_testing main.cpp)
   target_compile_options(capi_testing PRIVATE
@@ -46,4 +47,6 @@ if(CAPI_BUILD_TESTING)
     >
   )
   target_link_libraries(capi_testing PRIVATE CAPI::capi)
+  add_test(NAME unique_id COMMAND $<TARGET_FILE:capi_testing> unique_id)
+  add_test(NAME unique_res COMMAND $<TARGET_FILE:capi_testing> unique_res)
 endif()
