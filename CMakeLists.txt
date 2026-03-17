@@ -21,8 +21,7 @@ target_sources(capi INTERFACE
 target_compile_features(capi INTERFACE cxx_std_23)
 target_compile_definitions(capi INTERFACE $<$<BOOL:${CAPI_ENABLE_TESTING}>:CAPI_TESTING>)
 target_compile_definitions(capi INTERFACE $<$<BOOL:${CAPI_STATIC_TESTING}>:CAPI_STATIC_TESTING>)
-target_include_directories(capi INTERFACE include)
-target_include_directories(capi SYSTEM INTERFACE include/single)
+target_include_directories(capi SYSTEM INTERFACE include include/single)
 
 if(CAPI_BUILD_TESTING)
   enable_testing()
