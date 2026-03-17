@@ -1,5 +1,7 @@
 # CAPI
 
+[![CI](https://github.com/ascii255/capi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ascii255/capi/actions/workflows/ci.yml) [![Latest Tag](https://img.shields.io/github/v/tag/ascii255/capi?sort=semver)](https://github.com/ascii255/capi/tags) [![License](https://img.shields.io/badge/license-Unlicense-blue)](https://github.com/ascii255/capi/blob/main/UNLICENSE)
+
 `CAPI` provides lightweight C++ RAII utilities for resources acquired from C APIs.
 
 `unique_id` stores a plain C handle (for example: `int`, `FILE*`, or platform
