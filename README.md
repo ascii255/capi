@@ -1,4 +1,4 @@
-# CAPI
+# CAPI /[ˈseɪpaɪ](https://ipa-reader.com/?text=%CB%88se%C9%AApa%C9%AA&voice=Matthew)/
 
 [![CI](https://github.com/ascii255/capi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ascii255/capi/actions/workflows/ci.yml) [![Latest Tag](https://img.shields.io/github/v/tag/ascii255/capi?sort=semver)](https://github.com/ascii255/capi/tags) [![License](https://img.shields.io/badge/license-Unlicense-blue)](https://github.com/ascii255/capi/blob/main/UNLICENSE)
 

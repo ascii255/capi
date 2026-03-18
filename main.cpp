@@ -1,6 +1,11 @@
-#include <capi>
 #include <cstdlib>
+#include <print>
 #include <string_view>
+
+#include <expect/expect.hpp>
+
+#include <capi/unique_id.hpp>
+#include <capi/unique_res.hpp>
 
 int main(int argc, char** argv) {
   const auto run_all = [] {
@@ -14,6 +19,7 @@ int main(int argc, char** argv) {
   }
 
   const std::string_view selector { argv[1] };
+
   if (selector == "unique_id") {
     capi::testing::run_unique_id_tests();
     return EXIT_SUCCESS;
@@ -28,6 +34,8 @@ int main(int argc, char** argv) {
     run_all();
     return EXIT_SUCCESS;
   }
+
+  std::println(stderr, "unknown selector: {}", selector);
 
   return EXIT_FAILURE;
 }

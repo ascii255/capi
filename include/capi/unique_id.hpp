@@ -1,5 +1,7 @@
 #pragma once
 
+static_assert(__cplusplus >= 202302L, "capi requires C++23");
+
 #include <concepts>
 #include <type_traits>
 #include <utility>
@@ -32,12 +34,15 @@ public:
   constexpr explicit operator bool() const noexcept { return id != Uninitialized; }
 };
 
-} // namespace capi
+} // namespace capi::inline v1_0_4
+
+//
+//
+//
 
 #ifdef CAPI_TESTING
 
-#include <expect>
-#include <type_traits>
+#include <expect/expect.hpp>
 
 namespace capi::testing {
 
@@ -104,13 +109,11 @@ constexpr void run_unique_id_tests() {
   simulated_c_api_id_lifecycle();
 }
 
-#ifdef CAPI_STATIC_TESTING
 static_assert([] {
   run_unique_id_tests();
   return true;
 }());
-#endif
 
 } // namespace capi::testing
 
-#endif
+#endif // CAPI_TESTING

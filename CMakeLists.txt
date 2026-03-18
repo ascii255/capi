@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-option(CAPI_ENABLE_TESTING "Enable testing" OFF)
-option(CAPI_STATIC_TESTING "Enable compile-time testing" OFF)
-option(CAPI_BUILD_TESTING "Build testing binary" OFF)
-if(CAPI_STATIC_TESTING OR CAPI_BUILD_TESTING)
-  set(CAPI_ENABLE_TESTING ON CACHE BOOL "Enable testing" FORCE)
-endif()
-
-project(CAPI VERSION 1.0.0 LANGUAGES CXX)
+project(CAPI VERSION 1.0.5 LANGUAGES CXX)
 
 add_library(capi INTERFACE)
 add_library(CAPI::capi ALIAS capi)
@@ -19,33 +13,22 @@ target_sources(capi INTERFACE
     include/capi/unique_res.hpp
 )
 target_compile_features(capi INTERFACE cxx_std_23)
-target_compile_definitions(capi INTERFACE $<$<BOOL:${CAPI_ENABLE_TESTING}>:CAPI_TESTING>)
-target_compile_definitions(capi INTERFACE $<$<BOOL:${CAPI_STATIC_TESTING}>:CAPI_STATIC_TESTING>)
 target_include_directories(capi SYSTEM INTERFACE include include/single)
 
-if(CAPI_BUILD_TESTING)
-  enable_testing()
-  set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+if(PROJECT_IS_TOP_LEVEL)
   add_executable(capi_testing main.cpp)
+  target_compile_features(capi_testing PRIVATE cxx_std_23)
+  target_include_directories(capi_testing PRIVATE include)
+  target_compile_definitions(capi_testing PRIVATE CAPI_TESTING)
   target_compile_options(capi_testing PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:
-      /W4
-      /WX
-      /permissive-
-    >
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /permissive->
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
-      -Wall
-      -Wextra
-      -Wpedantic
-      -Werror
-      -Wshadow
-      -Wconversion
-      -Wsign-conversion
-      -Wnull-dereference
-      -Wdouble-promotion
-    >
+      -Wall -Wextra -Wpedantic -Werror -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion>
   )
-  target_link_libraries(capi_testing PRIVATE CAPI::capi)
+  set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+  include(CTest)
   add_test(NAME unique_id COMMAND $<TARGET_FILE:capi_testing> unique_id)
   add_test(NAME unique_res COMMAND $<TARGET_FILE:capi_testing> unique_res)
+  include(Coverage)
+  add_coverage(capi_testing capi)
 endif()

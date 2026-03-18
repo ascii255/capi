@@ -1,5 +1,7 @@
 #pragma once
 
+static_assert(__cplusplus >= 202302L, "capi requires C++23");
+
 #include <memory>
 #include <utility>
 
@@ -23,12 +25,17 @@ public:
   constexpr explicit operator bool() const noexcept { return resource != nullptr; }
 };
 
-} // namespace capi
+} // namespace capi::inline v1_0_4
+
+//
+//
+//
 
 #ifdef CAPI_TESTING
 
-#include <expect>
 #include <type_traits>
+
+#include <expect/expect.hpp>
 
 namespace capi::testing {
 
@@ -94,6 +101,11 @@ constexpr void move_assignment_transfers_resource() {
   expect(!static_cast<bool>(source));
 }
 
+constexpr void nullptr_release_is_noop() {
+  c_api_release(nullptr);
+  // If we get here without crashing, the nullptr check worked
+}
+
 constexpr void run_unique_res_tests() {
   expect(std::is_move_constructible_v<tracked_int>);
   expect(std::is_move_assignable_v<tracked_int>);
@@ -103,16 +115,15 @@ constexpr void run_unique_res_tests() {
   empty_resource_behaves_as_expected();
   move_constructor_transfers_resource();
   move_assignment_transfers_resource();
+  nullptr_release_is_noop();
   simulated_c_api_resource_lifecycle();
 }
 
-#ifdef CAPI_STATIC_TESTING
 static_assert([] {
   run_unique_res_tests();
   return true;
 }());
-#endif
 
 } // namespace capi::testing
 
-#endif
+#endif // CAPI_TESTING
