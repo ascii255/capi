@@ -1,5 +1,5 @@
 ---
-# clang-format version: 22
+# clang-format 20
 BasedOnStyle: LLVM
 ColumnLimit: 120
 PointerAlignment: Left

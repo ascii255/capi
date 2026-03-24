@@ -20,7 +20,7 @@ public:
   constexpr explicit unique_id(T raw_id, Args&&... args) noexcept(noexcept(Open(raw_id, std::forward<Args>(args)...)))
       : id { Open(raw_id, std::forward<Args>(args)...) } {}
   constexpr ~unique_id() noexcept(noexcept(Close(std::declval<T>()))) {
-    if (id != Uninitialized) Close(id);
+    if (static_cast<bool>(*this)) Close(id);
   }
   constexpr unique_id(const unique_id&) = delete;
   constexpr unique_id& operator=(const unique_id&) = delete;
