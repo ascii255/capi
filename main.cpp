@@ -7,12 +7,14 @@
 #include <capi/unique_flgd.hpp>
 #include <capi/unique_id.hpp>
 #include <capi/unique_res.hpp>
+#include <capi/unique_sys.hpp>
 
 int main(int argc, char** argv) {
   const auto run_all = [] {
     capi::testing::run_unique_flgd_tests();
     capi::testing::run_unique_id_tests();
     capi::testing::run_unique_res_tests();
+    capi::testing::run_unique_sys_tests();
   };
 
   if (argc < 2) {
@@ -34,6 +36,11 @@ int main(int argc, char** argv) {
 
   if (selector == "unique_res") {
     capi::testing::run_unique_res_tests();
+    return EXIT_SUCCESS;
+  }
+
+  if (selector == "unique_sys") {
+    capi::testing::run_unique_sys_tests();
     return EXIT_SUCCESS;
   }
 

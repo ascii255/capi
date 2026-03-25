@@ -12,6 +12,7 @@ target_sources(capi INTERFACE
     include/capi/unique_flgd.hpp
     include/capi/unique_id.hpp
     include/capi/unique_res.hpp
+    include/capi/unique_sys.hpp
 )
 target_compile_features(capi INTERFACE cxx_std_23)
 target_include_directories(capi SYSTEM INTERFACE include include/single)
@@ -31,6 +32,7 @@ if(PROJECT_IS_TOP_LEVEL)
   add_test(NAME unique_flgd COMMAND $<TARGET_FILE:capi_testing> unique_flgd)
   add_test(NAME unique_id COMMAND $<TARGET_FILE:capi_testing> unique_id)
   add_test(NAME unique_res COMMAND $<TARGET_FILE:capi_testing> unique_res)
+  add_test(NAME unique_sys COMMAND $<TARGET_FILE:capi_testing> unique_sys)
   include(Coverage)
   add_coverage(capi_testing capi)
 endif()
