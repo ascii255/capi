@@ -7,21 +7,13 @@ static_assert(__cplusplus >= 202302L, "capi requires C++23");
 
 namespace capi::inline v1_0_5 {
 
-template <auto Value, auto Init, auto Quit, auto Query>
-  requires std::is_invocable_r_v<bool, decltype(Init), decltype(Value)> &&
-           std::is_invocable_r_v<void, decltype(Quit), decltype(Value)> &&
-           std::is_invocable_r_v<decltype(Value), decltype(Query), decltype(Value)> &&
-           requires(decltype(Value) a, decltype(Value) b) { a & b; }
+template <auto Value, auto Init, auto Quit, auto Query, typename T = decltype(Value)>
+  requires std::is_invocable_r_v<bool, decltype(Init), T> && std::is_invocable_r_v<void, decltype(Quit), T> &&
+           std::is_invocable_r_v<T, decltype(Query), T> && requires(T a, T b) { a & b; }
 struct unique_flgd {
-  using T = decltype(Value);
-
-private:
-  T flag;
-
-public:
   constexpr unique_flgd() noexcept(noexcept(Query(Value)) && noexcept(Init(Value)) &&
                                    std::is_nothrow_move_constructible_v<T>)
-      : flag { !(Query(Value) & Value) && Init(Value) ? Value : T {} } {}
+    : flag { !(Query(Value) & Value) && Init(Value) ? Value : T {} } {}
   constexpr ~unique_flgd() {
     if (static_cast<bool>(*this)) Quit(flag);
   }
@@ -32,9 +24,11 @@ public:
     std::swap(flag, other.flag);
     return *this;
   }
-  
   constexpr explicit operator T() const noexcept { return flag; }
   constexpr explicit operator bool() const noexcept(noexcept(Query(std::declval<T>()))) { return Query(flag) & flag; }
+
+private:
+  T flag;
 };
 
 } // namespace capi::inline v1_0_5

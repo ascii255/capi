@@ -11,11 +11,20 @@ destructor.
 `unique_res` acquires a pointer through `Create(args...)` and automatically
 releases it with `Destroy(ptr)` when the wrapper goes out of scope.
 
+`unique_flgd` manages a single C-style bit flag: it checks whether the flag is
+already active, initializes it when needed, and clears it in the destructor.
+
+`unique_sys` manages process-wide C API lifecycle setup/teardown pairs, calling
+`Init()` on construction and `Quit()` on destruction when initialization
+succeeds.
+
 ## Include
 
 ```cpp
+#include <capi/unique_flgd.hpp>
 #include <capi/unique_id.hpp>
 #include <capi/unique_res.hpp>
+#include <capi/unique_sys.hpp>
 // or
 #include <capi>
 ```
@@ -139,6 +148,58 @@ int send_ping_v2() {
 } // c_client_close is called automatically here
 ```
 
+## Example: wrap a C API capability flag with `unique_flgd`
+
+```cpp
+extern "C" {
+	using c_flags_t = unsigned;
+
+	inline constexpr c_flags_t C_FLAG_MONITOR = 0x1U;
+
+	bool c_flag_enable(c_flags_t flag) noexcept;
+	void c_flag_disable(c_flags_t flag) noexcept;
+	c_flags_t c_flag_query(c_flags_t mask) noexcept;
+}
+
+#include <capi/unique_flgd.hpp>
+
+using monitor_flag =
+	capi::unique_flgd<C_FLAG_MONITOR, c_flag_enable, c_flag_disable, c_flag_query>;
+
+int run_with_monitoring() {
+	monitor_flag monitor {};
+
+	if (!static_cast<bool>(monitor)) {
+		return -1;
+	}
+
+	return 0;
+} // c_flag_disable(C_FLAG_MONITOR) is called automatically if acquired
+```
+
+## Example: wrap global C API init/shutdown with `unique_sys`
+
+```cpp
+extern "C" {
+	bool c_runtime_init() noexcept;
+	void c_runtime_shutdown() noexcept;
+}
+
+#include <capi/unique_sys.hpp>
+
+using runtime_guard = capi::unique_sys<c_runtime_init, c_runtime_shutdown>;
+
+int run_program() {
+	runtime_guard runtime {};
+
+	if (!static_cast<bool>(runtime)) {
+		return -1;
+	}
+
+	return 0;
+} // c_runtime_shutdown() is called automatically if init succeeded
+```
+
 ## Notes
 
 - `unique_id` is move-only (copy operations are deleted).
@@ -151,6 +212,14 @@ int send_ping_v2() {
 - `Create(args...)` must return `T*`.
 - A `nullptr` result from `Create(...)` is valid and evaluates to `false`.
 - Access the underlying pointer with `static_cast<T*>(handle)`.
+- `unique_flgd` is move-only (copy operations are deleted).
+- `unique_flgd` is defined as `capi::unique_flgd<Value, Init, Quit, Query, T = decltype(Value)>`.
+- `Init(flag)` must return `bool`; `Quit(flag)` must be invocable.
+- `Query(mask)` must return `T`; `operator bool()` checks `Query(flag) & flag`.
+- `unique_sys` is non-copyable and non-movable.
+- `unique_sys` is defined as `capi::unique_sys<Init, Quit>`.
+- `Init()` must return `bool`; `Quit()` must be invocable.
+- `Quit()` is called only when initialization succeeded.
 
 ## CMake
 

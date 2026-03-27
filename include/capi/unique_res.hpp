@@ -5,17 +5,13 @@ static_assert(__cplusplus >= 202302L, "capi requires C++23");
 #include <memory>
 #include <utility>
 
-namespace capi::inline v1_0_4 {
+namespace capi::inline v1_0_5 {
 
 template <typename T, auto Create, auto Destroy> struct unique_res {
-protected:
-  std::unique_ptr<T, decltype(Destroy)> resource;
-
-public:
   template <typename... Args>
     requires std::is_invocable_r_v<T*, decltype(Create), Args...>
   constexpr explicit unique_res(Args&&... args) noexcept(noexcept(Create(std::forward<Args>(args)...)))
-      : resource { Create(std::forward<Args>(args)...), Destroy } {}
+    : resource { Create(std::forward<Args>(args)...), Destroy } {}
   unique_res(const unique_res&) = delete;
   unique_res& operator=(const unique_res&) = delete;
   constexpr unique_res(unique_res&&) noexcept = default;
@@ -23,9 +19,12 @@ public:
 
   constexpr explicit operator T*() const noexcept { return resource.get(); }
   constexpr explicit operator bool() const noexcept { return resource != nullptr; }
+
+private:
+  std::unique_ptr<T, decltype(Destroy)> resource;
 };
 
-} // namespace capi::inline v1_0_4
+} // namespace capi::inline v1_0_5
 
 //
 //

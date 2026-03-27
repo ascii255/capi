@@ -7,14 +7,9 @@ static_assert(__cplusplus >= 202302L, "capi requires C++23");
 namespace capi::inline v1_0_5 {
 
 template <auto Init, auto Quit>
-  requires std::is_invocable_r_v<bool, decltype(Init)> &&
-           std::is_invocable_r_v<void, decltype(Quit)>
+  requires std::is_invocable_r_v<bool, decltype(Init)> && std::is_invocable_r_v<void, decltype(Quit)>
 struct unique_sys {
-private:
-  bool initialized;
-public:
-  constexpr unique_sys() noexcept(noexcept(Init()))
-      : initialized { Init() } {}
+  constexpr unique_sys() noexcept(noexcept(Init())) : initialized { Init() } {}
   constexpr ~unique_sys() {
     if (initialized) Quit();
   }
@@ -23,6 +18,9 @@ public:
   constexpr unique_sys(unique_sys&&) = delete;
   constexpr unique_sys& operator=(unique_sys&&) = delete;
   constexpr explicit operator bool() const noexcept { return initialized; }
+
+private:
+  bool initialized;
 };
 
 } // namespace capi::inline v1_0_5
@@ -50,9 +48,7 @@ inline bool sys_init() noexcept {
   return true;
 }
 
-inline void sys_quit() noexcept {
-  ++sys_quit_calls;
-}
+inline void sys_quit() noexcept { ++sys_quit_calls; }
 
 inline bool failing_sys_init() noexcept {
   ++sys_init_calls;

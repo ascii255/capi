@@ -6,19 +6,15 @@ static_assert(__cplusplus >= 202302L, "capi requires C++23");
 #include <type_traits>
 #include <utility>
 
-namespace capi::inline v1_0_4 {
+namespace capi::inline v1_0_5 {
 
 template <typename T, auto Open, auto Close, T Uninitialized = T {}>
   requires std::invocable<decltype(Close), T>
 struct unique_id {
-protected:
-  T id = Uninitialized;
-
-public:
   template <typename... Args>
     requires std::is_invocable_r_v<T, decltype(Open), T, Args...>
   constexpr explicit unique_id(T raw_id, Args&&... args) noexcept(noexcept(Open(raw_id, std::forward<Args>(args)...)))
-      : id { Open(raw_id, std::forward<Args>(args)...) } {}
+    : id { Open(raw_id, std::forward<Args>(args)...) } {}
   constexpr ~unique_id() noexcept(noexcept(Close(std::declval<T>()))) {
     if (static_cast<bool>(*this)) Close(id);
   }
@@ -32,9 +28,12 @@ public:
 
   constexpr explicit operator T() const noexcept { return id; }
   constexpr explicit operator bool() const noexcept { return id != Uninitialized; }
+
+private:
+  T id = Uninitialized;
 };
 
-} // namespace capi::inline v1_0_4
+} // namespace capi::inline v1_0_5
 
 //
 //
