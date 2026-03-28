@@ -4,6 +4,7 @@
 
 #include <expect/expect.hpp>
 
+#include <capi/flag.hpp>
 #include <capi/unique_flgd.hpp>
 #include <capi/unique_id.hpp>
 #include <capi/unique_res.hpp>
@@ -11,6 +12,7 @@
 
 int main(int argc, char** argv) {
   const auto run_all = [] {
+    capi::testing::run_flag_tests();
     capi::testing::run_unique_flgd_tests();
     capi::testing::run_unique_id_tests();
     capi::testing::run_unique_res_tests();
@@ -26,6 +28,11 @@ int main(int argc, char** argv) {
 
   if (selector == "unique_id") {
     capi::testing::run_unique_id_tests();
+    return EXIT_SUCCESS;
+  }
+
+  if (selector == "flag") {
+    capi::testing::run_flag_tests();
     return EXIT_SUCCESS;
   }
 
