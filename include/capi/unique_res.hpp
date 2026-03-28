@@ -20,7 +20,7 @@ template <typename T, auto Create, auto Destroy> struct unique_res {
   constexpr explicit operator T*() const noexcept { return resource.get(); }
   constexpr explicit operator bool() const noexcept { return resource != nullptr; }
 
-private:
+protected:
   std::unique_ptr<T, decltype(Destroy)> resource;
 };
 

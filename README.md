@@ -11,6 +11,10 @@ destructor.
 `unique_res` acquires a pointer through `Create(args...)` and automatically
 releases it with `Destroy(ptr)` when the wrapper goes out of scope.
 
+`flag` utilities in `flag.hpp` provide typed bitwise operators for opted-in
+unsigned enums and `flag_value(value)`, which returns `std::to_underlying(value)`
+for `capi::flag` enums and the original value otherwise.
+
 `unique_flgd` manages a single C-style bit flag: it checks whether the flag is
 already active, initializes it when needed, and clears it in the destructor.
 
@@ -21,6 +25,7 @@ succeeds.
 ## Include
 
 ```cpp
+#include <capi/flag.hpp>
 #include <capi/unique_flgd.hpp>
 #include <capi/unique_id.hpp>
 #include <capi/unique_res.hpp>
@@ -177,6 +182,31 @@ int run_with_monitoring() {
 } // c_flag_disable(C_FLAG_MONITOR) is called automatically if acquired
 ```
 
+## Example: enable `flag.hpp` operators for an `enum class`
+
+Prefer `ENABLE_FLAG_ENUM(your_enum_type)` in the same namespace as the enum.
+The macro declares `enable_flag_enum(...)` and imports the bitwise operators so
+operator lookup works naturally for your type:
+
+```cpp
+#include <capi/flag.hpp>
+
+enum class app_flag : unsigned {
+	none = 0U,
+	monitor = 1U << 0U,
+	trace = 1U << 1U,
+};
+
+ENABLE_FLAG_ENUM(app_flag)
+
+static_assert(capi::flag<app_flag>);
+static_assert(std::is_same_v<decltype(capi::flag_value(app_flag::monitor)), unsigned>);
+
+constexpr app_flag combined = app_flag::monitor | app_flag::trace;
+static_assert(capi::flag_value(combined) ==
+	(static_cast<unsigned>(app_flag::monitor) | static_cast<unsigned>(app_flag::trace)));
+```
+
 ## Example: wrap global C API init/shutdown with `unique_sys`
 
 ```cpp
@@ -212,10 +242,12 @@ int run_program() {
 - `Create(args...)` must return `T*`.
 - A `nullptr` result from `Create(...)` is valid and evaluates to `false`.
 - Access the underlying pointer with `static_cast<T*>(handle)`.
+- `flag.hpp` defines `capi::flag_enum`, `capi::flag`, bitwise operators for `capi::flag`, and `capi::flag_value(value)`.
+- Opt an enum into `capi::flag_enum` with `ENABLE_FLAG_ENUM(your_enum_type)` in the enum's namespace.
 - `unique_flgd` is move-only (copy operations are deleted).
-- `unique_flgd` is defined as `capi::unique_flgd<Value, Init, Quit, Query, T = decltype(Value)>`.
+- `unique_flgd` is defined as `capi::unique_flgd<Value, Init, Quit, Query, Underlying = capi::flag_value(Value), T = decltype(Underlying)>`.
 - `Init(flag)` must return `bool`; `Quit(flag)` must be invocable.
-- `Query(mask)` must return `T`; `operator bool()` checks `Query(flag) & flag`.
+- `Query(mask)` must return `T`; `operator bool()` checks `Query(flag) & flag` and expects that expression to be convertible to `bool`.
 - `unique_sys` is non-copyable and non-movable.
 - `unique_sys` is defined as `capi::unique_sys<Init, Quit>`.
 - `Init()` must return `bool`; `Quit()` must be invocable.
@@ -228,4 +260,25 @@ Use the `CAPI::capi` CMake target when linking CAPI.
 ```cmake
 add_subdirectory(path/to/capi)
 target_link_libraries(your_target PRIVATE CAPI::capi)
+```
+
+## Testing
+
+Build and run all tests:
+
+```sh
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Run only the `flag.hpp` test group:
+
+```sh
+ctest --test-dir build -R '^flag$' --output-on-failure
+```
+
+Generate and print header coverage summary:
+
+```sh
+cmake --build build --target coverage
 ```
