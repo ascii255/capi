@@ -9,6 +9,7 @@ target_sources(capi INTERFACE
   FILE_SET HEADERS
   BASE_DIRS include
   FILES
+    include/capi/flag.hpp
     include/capi/unique_flgd.hpp
     include/capi/unique_id.hpp
     include/capi/unique_res.hpp
@@ -29,6 +30,7 @@ if(PROJECT_IS_TOP_LEVEL)
   )
   set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
   include(CTest)
+  add_test(NAME flag COMMAND $<TARGET_FILE:capi_testing> flag)
   add_test(NAME unique_flgd COMMAND $<TARGET_FILE:capi_testing> unique_flgd)
   add_test(NAME unique_id COMMAND $<TARGET_FILE:capi_testing> unique_id)
   add_test(NAME unique_res COMMAND $<TARGET_FILE:capi_testing> unique_res)
